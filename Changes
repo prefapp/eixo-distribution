@@ -1,0 +1,6 @@
+Revision history for Perl extension Eixo::Distribution.
+
+0.01  Fri Aug 19 18:02:52 2016
+	- original version; created by h2xs 1.23 with options
+		-AX Eixo::Distribution
+
