@@ -8,7 +8,7 @@ Eixo::Distribution - Suite of Perl modules to interact with Docker::Distribution
 
     use Eixo::Distribution::Api;
     
-    my $a = Eixo::Docker::Api->new('http://127.0.0.1:5000'); 
+    my $a = Eixo::Distribution::Api->new('http://127.0.0.1:5000'); 
 
     # list images
     my ($image) = $a->images->list;
