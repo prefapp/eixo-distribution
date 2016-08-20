@@ -7,36 +7,65 @@ use Eixo::Distribution::ImageManifest;
 
 has(
 
+    name=>undef,
+    
+    digest=>undef, 
+   
     manifest=>undef,
-
-    layers=>undef,
 
 );
 
+sub layers{
+    $_[0]->api->layers->image(
+        $_[0]->name
+    );
+}
+
+sub manifests{
+    $_[0]->api->manifests->name(
+        $_[0]->name
+    );
+}
+
 sub initialize{
+
     my ($self, %args) = @_;
 
     $self->manifest(
 
         Eixo::Distribution::ImageManifest->new(
 
-            %{$args{manifest_data} || {}}
+            %{$args{manifest_data} || {}},
+
+            api=>$args{api}
 
         )
 
     );
-
-    $self->layers([]);
 
     $self->SUPER::initialize(%args);
 
     $self;
 }
 
+sub delete{
+    my ($self, %args) = @_;
+
+    ##$self = $self->get(%args);
+
+    # firstly we delete the layers
+    foreach my $layer_digest ($self->manifest->layersDisgest){
+        $self->layers->delete($layer_digest);
+    }    
+
+    # secondly we delete the manifest itself
+    $self->manifests->delete($self->digest);
+}
+
 sub get{
     my ($self, %args) = @_;
 
-    $args{name} = $args{name} || $self->manifest->name ||
+    $args{name} = $args{name} || $self->name ||
         $self->error("IMAGE::GET: name is needed");
 
     $args{reference} = $args{reference} || 
@@ -45,17 +74,32 @@ sub get{
                 $self->error("IMAGE::GET: a reference (tag|digest) is needed");
 
 
+    my $digest;
+    my $image_data;
+
     $self->api->getV2(
 
         args=>\%args,
 
         uri_mask=>"/v2/:name/manifests/:reference",
 
-        __callback=>sub {
+        onProgress=>sub {
+            my ($body, $res) = @_;
+
+            $digest = $res->headers->header("docker-content-digest");
+         
+            $image_data = $body;   
+        },
+
+        onSuccess=>sub {
 
             $self->populate({
 
-                manifest_data=>$_[0]
+                name=>$args{name},
+
+                digest=>$digest,
+
+                manifest_data=>JSON->new->utf8->decode($image_data)
 
             });
         }
@@ -64,60 +108,10 @@ sub get{
 
 }
 
-sub layerDelete{
-    my ($self, $layer, %args) = @_;
-
-    $args{name} = $args{name} || $self->manifest->name ||
-        $self->error("IMAGE:LAYER_DELETE: a name is needed");
-    
-    unless($layer){
-        $self->error("IMAGE:LAYER_DELETE: a layer digest is needed");
-    }
-
-    $args{reference} = $layer; 
-    
-    $self->api->deleteV2(
-
-        args=>\%args,
-    
-        uri_mask=>"/v2/:name/blobs/:reference",
-
-        __callback=>sub {
-
-           # print Dumper($_[0]); use Data::Dumper;
-
-        }
-    );
-}
-
-sub manifestDelete{
-    my ($self, $manifest, %args) = @_;
-
-    $args{name} = $args{name} || $self->manifest->name ||
-        $self->error("IMAGE:MANIFEST_DELETE: a name is needed");
-    
-    unless($manifest){
-        $self->error("IMAGE:MANIFEST_DELETE: a manifest digest is needed");
-    }
-
-    $self->api->deleteV2(
-
-        args=>\%args,
-
-        uri_mask=>"/v2/:name/manifests/:reference",
-
-        __callback => sub {
-
-            #print Dumper($_[0]); use Data::Dumper;
-        }
-
-    );
-}
-
 sub layerExists{
     my ($self, $layer, %args) = @_;
 
-    $args{name} = $args{name} || $self->manifest->name ||
+    $args{name} = $args{name} || $self->name ||
         $self->error("IMAGE:LAYER_EXISTS: a name is needed");
     
     unless($layer){
@@ -153,9 +147,9 @@ sub layerExists{
 }
 
 sub tags{
-    my ($self, %args) = @_;
+    my ($self, $image_name, %args) = @_;
 
-    $args{name} = $args{name} || $self->manifest->name ||
+    $args{name} = $image_name || $self->manifest->name ||
         $self->error("IMAGE::GET: name is needed");
 
     $self->api->getV2(
@@ -166,7 +160,7 @@ sub tags{
 
         __callback=>sub {
 
-            $_[0]->{tags};
+            $_[0]->{tags} || [];
 
         }
 

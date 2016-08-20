@@ -61,6 +61,13 @@ sub images{
     $_[0]->produce('Eixo::Distribution::Image');
 }
 
+sub layers{
+    $_[0]->produce('Eixo::Distribution::Layer');
+}
+
+sub manifests{
+    $_[0]->produce('Eixo::Distribution::ImageManifest');
+}   
 
 sub __formatError{
 
@@ -94,8 +101,14 @@ sub __analyzeRequest{
     sub __addHeaderData{
         my ($self, $args) = @_;
 
-        $args->{HEADER_DATA} ||= {};
+        $args->{args}->{HEADER_DATA} ||= {};
 
-        $args->{HEADER_DATA}->{"Docker-Distribution-API-Version"} = "registry/2.0";
+        $args->{args}->{HEADER_DATA}->{"Docker-Distribution-API-Version"} = "registry/2.0";
+
+        $args->{args}->{HEADER_DATA}->{"Accept"} = join(',', 
+            
+            "application/vnd.docker.distribution.manifest.v2+json"
+            ,"application/vnd.docker.distribution.manifest.list.v2+json"
+        );
     }
 1;

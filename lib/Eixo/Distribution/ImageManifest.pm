@@ -1,45 +1,90 @@
 package Eixo::Distribution::ImageManifest;
 
 use strict;
-use Eixo::Base::Clase;
+use Eixo::Base::Clase 'Eixo::Distribution::Product';
+
+use Eixo::Distribution::Layer;
 
 has(
 
-    name=>undef,
-
-    tag=>undef,
-
-    fsLayers=>undef,
-
-    signatures=>undef,
-
-    architecture=>undef,
-
     schemaVersion=>undef,
 
-    history=>undef,
+    mediaType=>undef,
+
+    config=>undef,
+
+    name=>undef,
+
+    layers=>undef,
 );
 
 sub initialize{
     my ($self, %args) = @_;
 
-    $self->fsLayers([]);
-    $self->signatures([]);
-    $self->history([]);
+    $self->config({});
+    $self->layers([]);
 
     $self->SUPER::initialize(%args);
 
+    $self->layers([map {
+
+        Eixo::Distribution::Layer->new(
+
+            %{$_},
+
+            api=>$self->api
+
+        );         
+   
+    } @{$self->layers}]);
+
 }
 
-sub fsLayersDisgest{
+sub delete{
+    my ($self, $manifest, %args) = @_;
+
+    $args{name} = $args{name} || $self->name ||
+        $self->error("MANIFEST:DELETE: a name is needed");
     
-    my @d = map {
+    unless($manifest){
+        $self->error("MANIFEST:DELETE: a manifest digest is needed");
+    }
 
-        $_->{blobSum}
+    $args{reference} = $manifest;
 
-    } values(@{$_[0]->fsLayers});
+    $self->api->deleteV2(
 
-    wantarray ? @d : \@d;
+        args=>\%args,
+
+        uri_mask=>"/v2/:name/manifests/:reference",
+
+        __callback => sub {
+
+            #print Dumper($_[0]); use Data::Dumper;
+        }
+
+    );
 }
+
+sub layersDisgest{
+    
+    my @layers_digest = map {
+        $_->{digest}
+    } @{$_[0]->layers};
+
+    wantarray ? @layers_digest : \@layers_digest;
+}
+
+sub totalSize{
+
+    my $s = 0;
+
+    $s += $_ foreach(map {
+        $_->{size}
+    } @{$_[0]->layers});
+
+    $s;
+}
+
 
 1;
