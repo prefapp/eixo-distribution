@@ -1,40 +1,107 @@
-Eixo-Distribution version 0.01
-==============================
+=encoding utf8
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
+=head1 NAME
 
-A README file is required for CPAN modules since CPAN extracts the
-README file from a module distribution so that people browsing the
-archive can use it get an idea of the modules uses. It is usually a
-good idea to provide version information here so that people can
-decide whether fixes for the module are worth downloading.
+Eixo::Distribution - Suite of Perl modules to interact with Docker::Distribution
 
-INSTALLATION
+=head1 SYNOPSIS
 
-To install this module type the following:
+    use Eixo::Distribution::Api;
+    
+    my $a = Eixo::Docker::Api->new('http://127.0.0.1:5000'); 
 
-   perl Makefile.PL
-   make
-   make test
-   make install
+    # list images
+    my ($image) = $a->images->list;
 
-DEPENDENCIES
+    # get images tag
+    my @tags = $a->images->tags($image);
 
-This module requires these other modules and libraries:
+    # load an image
+    my $i = $a->images->get(name=>$image, reference=>"latest");
 
-  blah blah blah
+    # see total size (in bytes)
+    $i->manifest->totalSize;
+    
+    # image manifest
+    $i->manifest;
 
-COPYRIGHT AND LICENCE
+    # delete the blobs and manifest of an image
+    $i->delete;
 
-Put the correct copyright and licence information here.
+        # Important!! In the actual revision of the Docker::Distribution, the blobs and manifest are only marked 
+        # to be erased. To really delete them, it is necessary to run an administrative task (cf. garbage-collect)
 
-Copyright (C) 2016 by root
+=head3 
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.22.1 or,
-at your option, any later version of Perl 5 you may have available.
+=head1 DESCRIPTION
+
+The purpose of this library is to provide a set of modules to interact in a
+simple, but powerful way, with the L<Docker remote api |http://docs.docker.io/en/latest/reference/api/docker_remote_api/>
+
+=head1 DEPENDENCIES
+
+Currently this module has the following dependencies:
+
+=over
+
+=item *
+
+Eixo::Base >= 1.200,
+
+=item *
+
+Eixo::Rest >=  1.020,
+
+To support https we use LWP::Protocol::https module that needs ssl dev libraries installed in system.
+
+In ubuntu/debian: 
+
+   apt-get install libssl-dev
+
+=item *
+
+JSON >= 2.50,
+
+=item *
+
+Net::HTTP >= 6.06,
 
 
+=item *
+
+HTTP::Server::Simple::CGI (for testing purpose)
+
+
+=back
+
+
+=head1 CAVEATS
+
+=head1 DEVELOPMENT
+
+=head1 AUTHOR
+
+Francisco Maseda, <frmadem@gmail.com>
+
+Javier Gomez, <alambike@gmail.com>
+
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016, Francisco Maseda
+
+Copyright (C) 2016, Javier Gómez
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+L<http://www.apache.org/licenses/LICENSE-2.0>
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+=cut
